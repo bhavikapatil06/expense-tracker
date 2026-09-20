@@ -1,11 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import Toast from "./Toast";
 import ExpenseCard from "./ExpenseCard";
 import ExpenseForm from "./ExpenseForm";
 
 export default function Dashboard() {
   const [editingExpense, setEditingExpense] = useState(null);
+
+  const [toast, setToast] = useState({
+    message: "",
+    type: "success"
+  });
+
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
 
@@ -45,11 +52,21 @@ export default function Dashboard() {
       );
 
       setEditingExpense(null);
+
+      setToast({
+        message: "Expense updated successfully!",
+        type: "success"
+      });
     } else {
       setExpenses((currentExpenses) => [
         ...currentExpenses,
         newExpense
       ]);
+
+      setToast({
+        message: "Expense added successfully!",
+        type: "success"
+      });
     }
   };
 
@@ -88,19 +105,26 @@ export default function Dashboard() {
         expenseDate.getFullYear() === currentYear
       );
     })
-    .reduce((total, expense) => total + expense.amount, 0);
+    .reduce(
+      (total, expense) => total + expense.amount,
+      0
+    );
+
+  // Calculate category totals
+  const categoryTotals = expenses.reduce(
+    (totals, expense) => {
+      if (!totals[expense.category]) {
+        totals[expense.category] = 0;
+      }
+
+      totals[expense.category] += expense.amount;
+
+      return totals;
+    },
+    {}
+  );
 
   // Search and category filtering
-   const categoryTotals = expenses.reduce((totals, expense) => {
-  if (!totals[expense.category]) {
-    totals[expense.category] = 0;
-  }
-
-  totals[expense.category] += expense.amount;
-
-  return totals;
-}, {});
-  
   const filteredExpenses = expenses.filter((expense) => {
     const matchesSearch = expense.description
       .toLowerCase()
@@ -116,21 +140,35 @@ export default function Dashboard() {
   return (
     <section className="dashboard">
 
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() =>
+          setToast({
+            message: "",
+            type: "success"
+          })
+        }
+      />
+
       {/* Welcome Section */}
       <div className="welcome">
-  <div className="welcome-badge">
-    ✨ Personal Finance Dashboard
-  </div>
 
-  <h1>
-    Take control of your <span>money</span> 💰
-  </h1>
+        <div className="welcome-badge">
+          ✨ Personal Finance Dashboard
+        </div>
 
-  <p>
-    Track your spending, understand your habits, and make smarter
-    financial decisions.
-  </p>
-</div>
+        <h1>
+          Take control of your <span>money</span> 💰
+        </h1>
+
+        <p>
+          Track your spending, understand your habits, and make smarter
+          financial decisions.
+        </p>
+
+      </div>
 
       {/* Expense Form */}
       <ExpenseForm
@@ -141,80 +179,132 @@ export default function Dashboard() {
       {/* Summary Cards */}
       <div className="summary">
 
-  <div className="card">
-    <div className="card-icon">💸</div>
+        <div className="card">
 
-    <p>Total Expenses</p>
+          <div className="card-icon">
+            💸
+          </div>
 
-    <h2>₹{totalExpenses}</h2>
+          <p>
+            Total Expenses
+          </p>
 
-    <span className="card-description">
-      Your overall spending
-    </span>
-  </div>
+          <h2>
+            ₹{totalExpenses}
+          </h2>
 
-  <div className="card">
-    <div className="card-icon">📅</div>
+          <span className="card-description">
+            Your overall spending
+          </span>
 
-    <p>This Month</p>
+        </div>
 
-    <h2>₹{monthlyTotal}</h2>
+        <div className="card">
 
-    <span className="card-description">
-      Spending this month
-    </span>
-  </div>
+          <div className="card-icon">
+            📅
+          </div>
 
-  <div className="card">
-    <div className="card-icon">🧾</div>
+          <p>
+            This Month
+          </p>
 
-    <p>Total Transactions</p>
+          <h2>
+            ₹{monthlyTotal}
+          </h2>
 
-    <h2>{expenses.length}</h2>
+          <span className="card-description">
+            Spending this month
+          </span>
 
-    <span className="card-description">
-      Recorded expenses
-    </span>
-  </div>
+        </div>
 
-</div>
-      {/* Recent Expenses */}
-      <div className="expense-statistics">
+        <div className="card">
 
-  <h2>Expense Breakdown</h2>
+          <div className="card-icon">
+            🧾
+          </div>
 
-  {Object.entries(categoryTotals).map(([category, total]) => (
-    <div className="stat-row" key={category}>
+          <p>
+            Total Transactions
+          </p>
 
-      <div className="stat-info">
-  <span>{category}</span>
+          <h2>
+            {expenses.length}
+          </h2>
 
-  <strong>
-    ₹{total}{" "}
-    <span className="stat-percentage">
-      {totalExpenses > 0
-        ? ((total / totalExpenses) * 100).toFixed(1)
-        : 0}%
-    </span>
-  </strong>
-</div>
+          <span className="card-description">
+            Recorded expenses
+          </span>
 
-      <div className="stat-bar">
-        <div
-          className="stat-bar-fill"
-          style={{
-            width: `${(total / totalExpenses) * 100}%`
-          }}
-        ></div>
+        </div>
+
       </div>
 
-    </div>
-  ))}
+      {/* Expense Breakdown */}
+      <div className="expense-statistics">
 
-</div>
+        <h2>
+          Expense Breakdown
+        </h2>
+
+        {Object.entries(categoryTotals).map(
+          ([category, total]) => (
+
+            <div
+              className="stat-row"
+              key={category}
+            >
+
+              <div className="stat-info">
+
+                <span>
+                  {category}
+                </span>
+
+                <strong>
+                  ₹{total}{" "}
+
+                  <span className="stat-percentage">
+                    {totalExpenses > 0
+                      ? (
+                          (total / totalExpenses) *
+                          100
+                        ).toFixed(1)
+                      : 0}
+                    %
+                  </span>
+                </strong>
+
+              </div>
+
+              <div className="stat-bar">
+
+                <div
+                  className="stat-bar-fill"
+                  style={{
+                    width:
+                      totalExpenses > 0
+                        ? `${(total / totalExpenses) * 100}%`
+                        : "0%"
+                  }}
+                ></div>
+
+              </div>
+
+            </div>
+
+          )
+        )}
+
+      </div>
+
+      {/* Recent Expenses */}
       <div className="recent-expenses">
 
-        <h2>Recent Expenses</h2>
+        <h2>
+          Recent Expenses
+        </h2>
 
         {/* Search and Filter */}
         <div className="expense-filters">
@@ -223,44 +313,84 @@ export default function Dashboard() {
             type="text"
             placeholder="Search expenses..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) =>
+              setSearchTerm(e.target.value)
+            }
           />
 
           <select
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={(e) =>
+              setCategoryFilter(e.target.value)
+            }
           >
-            <option value="All">All Categories</option>
-            <option value="Food">Food</option>
-            <option value="Transport">Transport</option>
-            <option value="Shopping">Shopping</option>
-            <option value="Entertainment">Entertainment</option>
-            <option value="Bills">Bills</option>
+
+            <option value="All">
+              All Categories
+            </option>
+
+            <option value="Food">
+              Food
+            </option>
+
+            <option value="Transport">
+              Transport
+            </option>
+
+            <option value="Shopping">
+              Shopping
+            </option>
+
+            <option value="Entertainment">
+              Entertainment
+            </option>
+
+            <option value="Bills">
+              Bills
+            </option>
+
           </select>
 
         </div>
 
         {/* Expense List */}
         {filteredExpenses.length > 0 ? (
-  filteredExpenses.map((expense) => (
-    <ExpenseCard
-      key={expense.id}
-      id={expense.id}
-      category={expense.category}
-      description={expense.description}
-      amount={expense.amount}
-      date={expense.date}
-      onDelete={handleDeleteExpense}
-      onEdit={handleEditExpense}
-    />
-  ))
-) : (
-  <div className="empty-state">
-    <div className="empty-icon">🔍</div>
-    <h3>No expenses found</h3>
-    <p>Try changing your search or filter.</p>
-  </div>
-)}
+
+          filteredExpenses.map((expense) => (
+
+            <ExpenseCard
+              key={expense.id}
+              id={expense.id}
+              category={expense.category}
+              description={expense.description}
+              amount={expense.amount}
+              date={expense.date}
+              onDelete={handleDeleteExpense}
+              onEdit={handleEditExpense}
+            />
+
+          ))
+
+        ) : (
+
+          <div className="empty-state">
+
+            <div className="empty-icon">
+              🔍
+            </div>
+
+            <h3>
+              No expenses found
+            </h3>
+
+            <p>
+              Try changing your search or filter.
+            </p>
+
+          </div>
+
+        )}
+
       </div>
 
     </section>

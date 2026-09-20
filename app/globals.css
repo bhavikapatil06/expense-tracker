@@ -583,3 +583,236 @@ nav span {
   font-weight: 500;
   margin-left: 6px;
 }
+
+/* TOAST NOTIFICATION */
+
+.toast {
+  position: fixed;
+  top: 90px;
+  right: 25px;
+  min-width: 280px;
+  max-width: 380px;
+  padding: 14px 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  z-index: 1000;
+}
+
+.toast span {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.toast p {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.toast button {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.toast-success span {
+  color: #16a34a;
+}
+
+@media (max-width: 500px) {
+  .toast {
+    left: 20px;
+    right: 20px;
+    min-width: auto;
+  }
+}
+
+/* DELETE CONFIRMATION */
+
+.expense-card {
+  position: relative;
+}
+
+.delete-confirmation {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.96);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 16px;
+  z-index: 10;
+}
+
+.delete-confirmation-content {
+  text-align: center;
+  padding: 20px;
+}
+
+.delete-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.delete-confirmation-content h3 {
+  margin: 5px 0;
+  font-size: 18px;
+}
+
+.delete-confirmation-content p {
+  margin: 8px 0 18px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.cancel-delete-btn,
+.confirm-delete-btn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cancel-delete-btn {
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+}
+
+.confirm-delete-btn {
+  border: none;
+  background: #dc2626;
+  color: white;
+}
+
+.cancel-delete-btn:hover {
+  background: #f3f4f6;
+}
+
+.confirm-delete-btn:hover {
+  background: #b91c1c;
+}
+
+@media (max-width: 500px) {
+  .delete-confirmation-content {
+    padding: 15px;
+  }
+
+  .confirmation-actions {
+    gap: 8px;
+  }
+
+  .cancel-delete-btn,
+  .confirm-delete-btn {
+    padding: 8px 14px;
+  }
+}
+
+/* ============================= */
+/* SMOOTH UI ANIMATIONS */
+/* ============================= */
+
+/* Cards gently appear when the page loads */
+.card,
+.expense-card,
+.expense-statistics,
+.recent-expenses,
+.expense-form {
+  animation: fadeUp 0.5s ease;
+}
+
+/* Page elements move slightly upward while appearing */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Summary cards hover effect */
+.card {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* Expense cards hover effect */
+.expense-card {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.expense-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+/* Buttons feel smoother */
+button {
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease,
+    background-color 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Input and select focus animation */
+input,
+select {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* Toast animation */
+.toast {
+  animation: toastSlide 0.3s ease;
+}
+
+@keyframes toastSlide {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
