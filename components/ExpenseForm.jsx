@@ -33,13 +33,15 @@ if (date === "") {
   return;
 }
 
-  const expenseData = {
-    id: editingExpense ? editingExpense.id : Date.now(),
-    description: name,
-    amount: Number(amount),
-    category: category,
-    date: date
-  };
+const expenseData = {
+  id: editingExpense ? editingExpense.id : Date.now(),
+  description: name,
+  amount: Number(amount),
+  category: category,
+  date: date
+};
+
+
 
   onAddExpense(expenseData);
 
