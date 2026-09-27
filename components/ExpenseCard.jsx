@@ -20,14 +20,21 @@ export default function ExpenseCard({
   onEdit
 }) {
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteClick = () => {
     setShowConfirmation(true);
   };
 
-  const handleConfirmDelete = () => {
-    onDelete(id);
-    setShowConfirmation(false);
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+
+    try {
+      await onDelete(id);
+      setShowConfirmation(false);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleCancelDelete = () => {
@@ -36,9 +43,7 @@ export default function ExpenseCard({
 
   return (
     <div className="expense-card">
-
       <div className="expense-info">
-
         <div className="expense-category">
           {categoryIcons[category] || "💰"}
         </div>
@@ -54,17 +59,14 @@ export default function ExpenseCard({
             {category}
           </p>
         </div>
-
       </div>
 
       <div className="expense-right">
-
         <h3 className="expense-amount">
           ₹{amount}
         </h3>
 
         <div className="expense-actions">
-
           <button
             className="edit-btn"
             onClick={() => onEdit(id)}
@@ -75,20 +77,16 @@ export default function ExpenseCard({
           <button
             className="delete-btn"
             onClick={handleDeleteClick}
+            disabled={isDeleting}
           >
             🗑️ Delete
           </button>
-
         </div>
-
       </div>
 
-      {/* Delete Confirmation */}
       {showConfirmation && (
         <div className="delete-confirmation">
-
           <div className="delete-confirmation-content">
-
             <div className="delete-icon">
               ⚠️
             </div>
@@ -103,10 +101,10 @@ export default function ExpenseCard({
             </p>
 
             <div className="confirmation-actions">
-
               <button
                 className="cancel-delete-btn"
                 onClick={handleCancelDelete}
+                disabled={isDeleting}
               >
                 Cancel
               </button>
@@ -114,17 +112,14 @@ export default function ExpenseCard({
               <button
                 className="confirm-delete-btn"
                 onClick={handleConfirmDelete}
+                disabled={isDeleting}
               >
-                Delete
+                {isDeleting ? "Deleting..." : "Delete"}
               </button>
-
             </div>
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 }

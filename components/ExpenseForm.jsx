@@ -10,6 +10,7 @@ export default function ExpenseForm({ onAddExpense, editingExpense }) {
   const [date, setDate] = useState(() => {
   return new Date().toISOString().split("T")[0];
 });
+const [isSaving, setIsSaving] = useState(false);
   useEffect(() => {
   if (editingExpense) {
     setName(editingExpense.description);
@@ -18,8 +19,9 @@ export default function ExpenseForm({ onAddExpense, editingExpense }) {
     setDate(editingExpense.date || "");
   }
 }, [editingExpense]);
-const handleSubmit = (e) => {
+const handleSubmit = async (e) => {
   e.preventDefault();
+ 
   if (name.trim() === "") {
   alert("Please enter an expense name.");
   return;
@@ -32,7 +34,7 @@ if (date === "") {
   alert("Please select a date.");
   return;
 }
-
+ setIsSaving(true);
 const expenseData = {
   id: editingExpense ? editingExpense.id : Date.now(),
   description: name,
@@ -42,9 +44,13 @@ const expenseData = {
 };
 
 
-
-  onAddExpense(expenseData);
-
+try {
+  await onAddExpense(expenseData);
+} finally {
+  setIsSaving(false);
+}
+ 
+ 
 setName("");
 setAmount("");
 setCategory("Food");
@@ -98,8 +104,14 @@ setDate(new Date().toISOString().split("T")[0]);
         />
       </div>
 
-      <button type="submit">
-  {editingExpense ? "Update Expense" : "Add Expense"}
+     <button type="submit" disabled={isSaving}>
+  {isSaving
+    ? editingExpense
+      ? "Updating..."
+      : "Saving..."
+    : editingExpense
+      ? "Update Expense"
+      : "Add Expense"}
 </button>
     </form>
   );
