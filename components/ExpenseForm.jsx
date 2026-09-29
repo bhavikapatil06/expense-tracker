@@ -36,7 +36,7 @@ if (date === "") {
 }
  setIsSaving(true);
 const expenseData = {
-  id: editingExpense ? editingExpense.id : Date.now(),
+  ...(editingExpense ? { id: editingExpense.id } : {}),
   description: name,
   amount: Number(amount),
   category: category,
