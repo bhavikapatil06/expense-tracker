@@ -1,8 +1,21 @@
 import { ObjectId } from "mongodb";
 import clientPromise from "../../../../lib/mongodb";
+import { getCurrentUser } from "../../../../lib/auth";
 
 export async function PUT(request, { params }) {
   try {
+    const session = await getCurrentUser();
+
+    if (!session) {
+      return Response.json(
+        {
+          success: false,
+          message: "Unauthorized"
+        },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
 
     if (!ObjectId.isValid(id)) {
@@ -21,7 +34,10 @@ export async function PUT(request, { params }) {
     const db = client.db("expense_tracker");
 
     const result = await db.collection("expenses").updateOne(
-      { _id: new ObjectId(id) },
+      {
+        _id: new ObjectId(id),
+        userId: session.userId
+      },
       {
         $set: {
           description: updatedExpense.description,
@@ -62,6 +78,18 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const session = await getCurrentUser();
+
+    if (!session) {
+      return Response.json(
+        {
+          success: false,
+          message: "Unauthorized"
+        },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
 
     if (!ObjectId.isValid(id)) {
@@ -78,7 +106,8 @@ export async function DELETE(request, { params }) {
     const db = client.db("expense_tracker");
 
     const result = await db.collection("expenses").deleteOne({
-      _id: new ObjectId(id)
+      _id: new ObjectId(id),
+      userId: session.userId
     });
 
     if (result.deletedCount === 0) {

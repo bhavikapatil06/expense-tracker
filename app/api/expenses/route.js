@@ -1,13 +1,28 @@
 import clientPromise from "../../../lib/mongodb";
+import { getCurrentUser } from "../../../lib/auth";
 
 export async function GET() {
   try {
+    const session = await getCurrentUser();
+
+    if (!session) {
+      return Response.json(
+        {
+          success: false,
+          message: "Unauthorized"
+        },
+        { status: 401 }
+      );
+    }
+
     const client = await clientPromise;
     const db = client.db("expense_tracker");
 
     const expenses = await db
       .collection("expenses")
-      .find({})
+      .find({
+        userId: session.userId
+      })
       .toArray();
 
     const formattedExpenses = expenses.map((expense) => ({
@@ -37,6 +52,17 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const session = await getCurrentUser();
+
+if (!session) {
+  return Response.json(
+    {
+      success: false,
+      message: "Unauthorized"
+    },
+    { status: 401 }
+  );
+}
     const expense = await request.json();
 
     // Validate required fields
@@ -83,13 +109,14 @@ export async function POST(request) {
     const db = client.db("expense_tracker");
 
     const result = await db
-      .collection("expenses")
-      .insertOne({
-        description: expense.description,
-        amount: amount,
-        category: expense.category,
-        date: expense.date
-      });
+  .collection("expenses")
+  .insertOne({
+    description: expense.description.trim(),
+    amount: amount,
+    category: expense.category,
+    date: expense.date,
+    userId: session.userId
+  });
 
     return Response.json({
       success: true,
