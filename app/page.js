@@ -1,11 +1,21 @@
+import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import Dashboard from "../components/Dashboard";
 
 export default function Home() {
   return (
-    <main>
-      <Navbar />
-      <Dashboard />
-    </main>
+    <div className="app-layout">
+
+      <Sidebar />
+
+      <div className="main-content">
+
+        <Navbar />
+
+        <Dashboard />
+
+      </div>
+
+    </div>
   );
 }

@@ -2,19 +2,21 @@
 
 import { useState } from "react";
 
-export default function LoginPage() {
+export default function RegisterPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
 
-    const response = await fetch("/api/auth/login", {
+    const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
+        name,
         email,
         password
       })
@@ -23,7 +25,8 @@ export default function LoginPage() {
     const data = await response.json();
 
     if (data.success) {
-      window.location.href = "/";
+      alert("Registration successful! Please login.");
+      window.location.href = "/login";
     } else {
       alert(data.message);
     }
@@ -32,13 +35,23 @@ export default function LoginPage() {
   return (
     <main className="auth-page">
       <div className="auth-card">
-        <h1>Welcome back 👋</h1>
+        <h1>Create Account ✨</h1>
 
         <p className="auth-subtitle">
-          Login to manage your expenses and keep your spending organized.
+          Create your account and start tracking your expenses.
         </p>
 
-        <form className="auth-form" onSubmit={handleLogin}>
+        <form className="auth-form" onSubmit={handleRegister}>
+          <label>Name</label>
+
+          <input
+            type="text"
+            placeholder="Enter your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+
           <label>Email</label>
 
           <input
@@ -53,20 +66,20 @@ export default function LoginPage() {
 
           <input
             type="password"
-            placeholder="Enter your password"
+            placeholder="Create a password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
 
           <button type="submit">
-            Login
+            Create Account
           </button>
         </form>
 
         <p className="auth-switch">
-          Don't have an account?{" "}
-          <a href="/register">Create one</a>
+          Already have an account?{" "}
+          <a href="/login">Login</a>
         </p>
       </div>
     </main>
