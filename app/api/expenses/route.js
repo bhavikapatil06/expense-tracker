@@ -39,6 +39,46 @@ export async function POST(request) {
   try {
     const expense = await request.json();
 
+    // Validate required fields
+    if (
+      !expense.description ||
+      !expense.category ||
+      !expense.date ||
+      expense.amount === undefined
+    ) {
+      return Response.json(
+        {
+          success: false,
+          message: "All expense fields are required"
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate amount
+    const amount = Number(expense.amount);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return Response.json(
+        {
+          success: false,
+          message: "Amount must be a valid number greater than 0"
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate description
+    if (expense.description.trim() === "") {
+      return Response.json(
+        {
+          success: false,
+          message: "Expense description cannot be empty"
+        },
+        { status: 400 }
+      );
+    }
+
     const client = await clientPromise;
     const db = client.db("expense_tracker");
 
@@ -46,7 +86,7 @@ export async function POST(request) {
       .collection("expenses")
       .insertOne({
         description: expense.description,
-        amount: Number(expense.amount),
+        amount: amount,
         category: expense.category,
         date: expense.date
       });
