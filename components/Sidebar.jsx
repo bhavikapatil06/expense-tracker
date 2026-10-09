@@ -81,30 +81,29 @@ export default function Sidebar() {
           <span>Dashboard</span>
         </a>
 
-        <button
-          className="sidebar-nav-item"
-          onClick={() => handleComingSoon("Transactions")}
-        >
-          <span className="sidebar-nav-icon">⇄</span>
-          <span>Transactions</span>
-        </button>
+        <a
+  href="/transactions"
+  className="sidebar-nav-item"
+>
+  <span className="sidebar-nav-icon">↔</span>
+  <span>Transactions</span>
+</a>
 
-        <button
-          className="sidebar-nav-item"
-          onClick={() => handleComingSoon("Analytics")}
-        >
-          <span className="sidebar-nav-icon">◔</span>
-          <span>Analytics</span>
-        </button>
+        <a
+  href="/analytics"
+  className="sidebar-nav-item"
+>
+  <span className="sidebar-nav-icon">◔</span>
+  <span>Analytics</span>
+</a>
 
-        <button
-          className="sidebar-nav-item"
-          onClick={() => handleComingSoon("Budgets")}
-        >
-          <span className="sidebar-nav-icon">◉</span>
-          <span>Budgets</span>
-        </button>
-
+        <a
+  href="/budgets"
+  className="sidebar-nav-item"
+>
+  <span className="sidebar-nav-icon">◷</span>
+  <span>Budgets</span>
+</a>
         <a
   href="/settings"
   className="sidebar-nav-item"
