@@ -1,79 +1,203 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+const formatMoney = (amount) =>
+  `₹${Number(amount || 0).toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+  })}`;
+
+const formatDate = (date) => {
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Invalid date";
+  }
+
+  return parsedDate.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const getDescription = (expense) =>
+  expense.description || expense.name || "Expense";
+
+const getCategoryIcon = (category = "") => {
+  const value = category.toLowerCase();
+
+  if (/food|grocer/.test(value)) return "▤";
+  if (/transport|travel|fuel/.test(value)) return "➜";
+  if (/bill|electricity|recharge/.test(value)) return "ϟ";
+  if (/education|fee|course/.test(value)) return "◇";
+  if (/shopping/.test(value)) return "□";
+  if (/health|medical|medicine/.test(value)) return "+";
+  if (/rent|home|house/.test(value)) return "⌂";
+  if (/emi|loan/.test(value)) return "₹";
+
+  return "○";
+};
 
 export default function TransactionsPage() {
   const [expenses, setExpenses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("newest");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    const fetchExpenses = async () => {
+    const controller = new AbortController();
+
+    async function fetchExpenses() {
       try {
-        const response = await fetch("/api/expenses");
+        setLoadError("");
+
+        const response = await fetch("/api/expenses", {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Could not load transactions.");
+        }
+
         const data = await response.json();
 
-        if (data.success) {
-          setExpenses(data.expenses);
+        if (!data.success || !Array.isArray(data.expenses)) {
+          throw new Error(
+            data.message || "Unexpected transaction data."
+          );
         }
+
+        setExpenses(data.expenses);
       } catch (error) {
-        console.error("Failed to load transactions:", error);
+        if (error.name !== "AbortError") {
+          console.error("Failed to load transactions:", error);
+          setLoadError(
+            "Transactions couldn't be loaded. Please try again."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
-    };
+    }
 
     fetchExpenses();
+
+    return () => controller.abort();
   }, []);
 
-  // =========================
-  // FILTER TRANSACTIONS
-  // =========================
+  // Build the dropdown from categories actually in the saved data.
+  const categories = useMemo(() => {
+    return [
+      ...new Set(
+        expenses
+          .map((expense) => expense.category?.trim())
+          .filter(Boolean)
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+  }, [expenses]);
 
-  const filteredExpenses = expenses
-    .filter((expense) => {
-      const search = searchTerm.toLowerCase();
+  // Search and category filtering.
+  const filteredExpenses = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
 
-      return (
-        expense.name?.toLowerCase().includes(search) ||
-        expense.description?.toLowerCase().includes(search) ||
-        expense.category?.toLowerCase().includes(search)
+    const result = expenses.filter((expense) => {
+      const matchesSearch = [
+        getDescription(expense),
+        expense.name,
+        expense.category,
+        expense.notes,
+      ].some((value) =>
+        String(value || "").toLowerCase().includes(search)
       );
-    })
-    .filter((expense) => {
-      if (categoryFilter === "All") {
-        return true;
+
+      const matchesCategory =
+        categoryFilter === "All" ||
+        expense.category === categoryFilter;
+
+      return matchesSearch && matchesCategory;
+    });
+
+    result.sort((a, b) => {
+      const amountA = Number(a.amount) || 0;
+      const amountB = Number(b.amount) || 0;
+      const dateA = new Date(a.date).getTime() || 0;
+      const dateB = new Date(b.date).getTime() || 0;
+
+      switch (sortBy) {
+        case "oldest":
+          return dateA - dateB;
+        case "highest":
+          return amountB - amountA;
+        case "lowest":
+          return amountA - amountB;
+        case "newest":
+        default:
+          return dateB - dateA;
       }
+    });
 
-      return expense.category === categoryFilter;
-    })
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+    return result;
+  }, [expenses, searchTerm, categoryFilter, sortBy]);
 
-  // =========================
-  // TOTAL
-  // =========================
-
-  const totalAmount = filteredExpenses.reduce(
-    (total, expense) => total + Number(expense.amount),
-    0
+  // Summary cards always reflect all loaded transactions.
+  const totalSpent = useMemo(
+    () =>
+      expenses.reduce(
+        (total, expense) => total + (Number(expense.amount) || 0),
+        0
+      ),
+    [expenses]
   );
 
-  // =========================
-  // CATEGORY ICON
-  // =========================
+  // Download the currently filtered and sorted transactions.
+  const exportCSV = () => {
+    if (filteredExpenses.length === 0) return;
 
-  const getCategoryIcon = (category) => {
-    if (category === "Food") return "F";
-    if (category === "Transport") return "T";
-    if (category === "Shopping") return "S";
+    const columns = ["Description", "Category", "Date", "Amount"];
 
-    return "E";
+    const escapeCSV = (value) => {
+      const text = String(value ?? "");
+      return `"${text.replace(/"/g, '""')}"`;
+    };
+
+    const rows = filteredExpenses.map((expense) => [
+      getDescription(expense),
+      expense.category || "Other",
+      formatDate(expense.date),
+      Number(expense.amount) || 0,
+    ]);
+
+    const csv = [columns, ...rows]
+      .map((row) => row.map(escapeCSV).join(","))
+      .join("\r\n");
+
+    const blob = new Blob(["\uFEFF", csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "transactions.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(url);
   };
 
-  // =========================
-  // LOADING
-  // =========================
+  const clearFilters = () => {
+    setSearchTerm("");
+    setCategoryFilter("All");
+    setSortBy("newest");
+  };
 
   if (loading) {
     return (
@@ -86,231 +210,201 @@ export default function TransactionsPage() {
   }
 
   return (
-    <main className="transactions-page">
-
-      {/* ================= HEADER ================= */}
-
-      <div className="transactions-header">
+    <main className="transactions-page transactions-page-polished">
+      <header className="transactions-header">
         <div>
           <span className="transactions-badge">
             TRANSACTIONS
           </span>
 
-          <h1>All Transactions</h1>
+          <h1>Transactions</h1>
 
           <p>
-            View, search and manage all your recorded expenses.
+            Search, filter and manage your spending activity.
           </p>
         </div>
 
-        <div className="transactions-summary">
-          <span>TOTAL SPENDING</span>
+        <button
+          type="button"
+          className="transactions-export-button"
+          onClick={exportCSV}
+          disabled={filteredExpenses.length === 0}
+        >
+          <span aria-hidden="true">↓</span>
+          Export CSV
+        </button>
+      </header>
 
-          <strong>
-            &#8377;{totalAmount.toFixed(0)}
-          </strong>
-        </div>
-      </div>
-
-      {/* ================= FILTER BAR ================= */}
-
-      <section className="transactions-filter-panel">
-
-        <div className="transactions-search">
-          <span className="transactions-search-icon">
-            Q
-          </span>
-
-          <input
-            type="text"
-            placeholder="Search transactions..."
-            value={searchTerm}
-            onChange={(event) =>
-              setSearchTerm(event.target.value)
-            }
-          />
-        </div>
-
-        <div className="transactions-filters">
-
+      {loadError ? (
+        <section className="transactions-error" role="alert">
+          <p>{loadError}</p>
           <button
-            className={
-              categoryFilter === "All"
-                ? "transaction-filter active"
-                : "transaction-filter"
-            }
-            onClick={() => setCategoryFilter("All")}
+            type="button"
+            onClick={() => window.location.reload()}
           >
-            All
+            Try again
           </button>
-
-          <button
-            className={
-              categoryFilter === "Food"
-                ? "transaction-filter active"
-                : "transaction-filter"
-            }
-            onClick={() => setCategoryFilter("Food")}
+        </section>
+      ) : (
+        <>
+          <section
+            className="transactions-summary-grid"
+            aria-label="Transaction summary"
           >
-            Food
-          </button>
+            <article className="transactions-stat-card">
+              <span>Total transactions</span>
+              <strong>{expenses.length}</strong>
+            </article>
 
-          <button
-            className={
-              categoryFilter === "Transport"
-                ? "transaction-filter active"
-                : "transaction-filter"
-            }
-            onClick={() => setCategoryFilter("Transport")}
+            <article className="transactions-stat-card">
+              <span>Total spent</span>
+              <strong>{formatMoney(totalSpent)}</strong>
+            </article>
+          </section>
+
+          <section
+            className="transactions-toolbar"
+            aria-label="Search and filter transactions"
           >
-            Transport
-          </button>
+            <label className="transactions-search transactions-search-polished">
+              <span aria-hidden="true">⌕</span>
+              <input
+                type="search"
+                placeholder="Search transactions..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                aria-label="Search transactions"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  aria-label="Clear search"
+                >
+                  ×
+                </button>
+              )}
+            </label>
 
-          <button
-            className={
-              categoryFilter === "Shopping"
-                ? "transaction-filter active"
-                : "transaction-filter"
-            }
-            onClick={() => setCategoryFilter("Shopping")}
-          >
-            Shopping
-          </button>
+            <div className="transactions-selects">
+              <label className="transactions-select-wrap">
+                <span className="transactions-sr-only">
+                  Filter by category
+                </span>
+                <select
+                  value={categoryFilter}
+                  onChange={(event) =>
+                    setCategoryFilter(event.target.value)
+                  }
+                >
+                  <option value="All">All categories</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-        </div>
+              <label className="transactions-select-wrap">
+                <span className="transactions-sr-only">
+                  Sort transactions
+                </span>
+                <select
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value)}
+                >
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="highest">Highest amount</option>
+                  <option value="lowest">Lowest amount</option>
+                </select>
+              </label>
+            </div>
+          </section>
 
-      </section>
-
-      {/* ================= TRANSACTION LIST ================= */}
-
-      <section className="transactions-panel">
-
-        <div className="transactions-panel-header">
-
-          <div>
-            <h2>Transaction History</h2>
-
-            <p>
-              {filteredExpenses.length} transaction
-              {filteredExpenses.length !== 1 ? "s" : ""}
-              {" "}found
-            </p>
-          </div>
-
-          {searchTerm || categoryFilter !== "All" ? (
-            <button
-              className="transactions-clear-button"
-              onClick={() => {
-                setSearchTerm("");
-                setCategoryFilter("All");
-              }}
-            >
-              Clear filters
-            </button>
-          ) : null}
-
-        </div>
-
-        {filteredExpenses.length > 0 ? (
-
-          <div className="transactions-list">
-
-            {filteredExpenses.map((expense) => (
-
-              <div
-                className="transaction-row"
-                key={expense.id}
-              >
-
-                {/* ICON */}
-
-                <div className="transaction-icon">
-                  {getCategoryIcon(expense.category)}
-                </div>
-
-                {/* MAIN INFO */}
-
-                <div className="transaction-main">
-
-                  <strong>
-                    {expense.description ||
-                      expense.name ||
-                      "Expense"}
-                  </strong>
-
-                  <span>
-                    {expense.category || "Other"}
-                  </span>
-
-                </div>
-
-                {/* DATE */}
-
-                <div className="transaction-date">
-
-                  <span>
-                    DATE
-                  </span>
-
-                  <strong>
-                    {new Date(
-                      expense.date
-                    ).toLocaleDateString("en-IN")}
-                  </strong>
-
-                </div>
-
-                {/* AMOUNT */}
-
-                <div className="transaction-amount">
-
-                  <strong>
-                    - &#8377;{Number(
-                      expense.amount
-                    ).toFixed(0)}
-                  </strong>
-
-                </div>
-
+          <section className="transactions-panel transactions-panel-polished">
+            <div className="transactions-panel-header">
+              <div>
+                <h2>Transaction history</h2>
+                <p>
+                  {filteredExpenses.length}{" "}
+                  {filteredExpenses.length === 1
+                    ? "transaction"
+                    : "transactions"}{" "}
+                  found
+                </p>
               </div>
 
-            ))}
-
-          </div>
-
-        ) : (
-
-          <div className="transactions-empty">
-
-            <div className="transactions-empty-icon">
-              -
+              {(searchTerm || categoryFilter !== "All" || sortBy !== "newest") && (
+                <button
+                  type="button"
+                  className="transactions-clear-button"
+                  onClick={clearFilters}
+                >
+                  Reset filters
+                </button>
+              )}
             </div>
 
-            <h3>
-              No transactions found
-            </h3>
+            {filteredExpenses.length > 0 ? (
+              <div className="transactions-list">
+                {filteredExpenses.map((expense, index) => (
+                  <article
+                    className="transaction-row transaction-row-polished"
+                    key={expense.id ?? expense._id ?? `${expense.date}-${index}`}
+                  >
+                    <div
+                      className="transaction-icon transaction-icon-polished"
+                      aria-hidden="true"
+                    >
+                      {getCategoryIcon(expense.category)}
+                    </div>
 
-            <p>
-              Try changing your search or category filter.
-            </p>
+                    <div className="transaction-main">
+                      <strong>{getDescription(expense)}</strong>
+                      <span>
+                        {expense.category || "Other"} ·{" "}
+                        {formatDate(expense.date)}
+                      </span>
+                    </div>
 
-            {(searchTerm || categoryFilter !== "All") && (
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setCategoryFilter("All");
-                }}
-              >
-                Clear filters
-              </button>
+                    <div className="transaction-amount transaction-amount-polished">
+                      <strong>
+                        −{formatMoney(expense.amount)}
+                      </strong>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="transactions-empty">
+                <div className="transactions-empty-icon" aria-hidden="true">
+                  ⌕
+                </div>
+
+                <h3>
+                  {expenses.length === 0
+                    ? "No transactions yet"
+                    : "No transactions found"}
+                </h3>
+
+                <p>
+                  {expenses.length === 0
+                    ? "Add an expense to see it here."
+                    : "Try another search term or category."}
+                </p>
+
+                {expenses.length > 0 && (
+                  <button type="button" onClick={clearFilters}>
+                    Reset filters
+                  </button>
+                )}
+              </div>
             )}
-
-          </div>
-
-        )}
-
-      </section>
-
+          </section>
+        </>
+      )}
     </main>
   );
 }
