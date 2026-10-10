@@ -4603,3 +4603,126 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Analytics pie chart layout adjustment */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.75fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.analytics-category-panel {
+  min-width: 0;
+}
+
+.analytics-category-panel .analytics-pie-chart-area {
+  width: 100%;
+}
+
+.analytics-category-panel .analytics-category-list {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.analytics-category-panel .analytics-pie-chart {
+  width: 220px;
+  height: 220px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+@media (max-width: 1000px) {
+  .analytics-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Analytics: pie chart and category list side by side */
+.analytics-breakdown-layout {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+}
+
+.analytics-breakdown-layout .analytics-pie-chart-area {
+  min-width: 0;
+  padding: 24px 0;
+}
+
+.analytics-breakdown-layout .analytics-pie-chart {
+  width: 220px;
+  height: 220px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+.analytics-breakdown-layout .analytics-category-list {
+  min-width: 0;
+  width: 100%;
+  margin-top: 0;
+}
+
+@media (max-width: 750px) {
+  .analytics-breakdown-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+
+/* Fix the empty second column in Analytics */
+.analytics-grid {
+  display: block;
+  width: 100%;
+  margin-bottom: 22px;
+}
+
+.analytics-category-panel {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Keep the pie chart and category breakdown side by side */
+.analytics-breakdown-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+  align-items: start;
+  gap: 32px;
+  width: 100%;
+}
+
+.analytics-breakdown-layout .analytics-pie-chart-area {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  min-width: 0;
+  padding: 24px 0;
+}
+
+.analytics-breakdown-layout .analytics-pie-chart {
+  width: 220px;
+  height: 220px;
+  max-width: 100%;
+}
+
+.analytics-breakdown-layout .analytics-category-list {
+  width: 100%;
+  min-width: 0;
+  margin-top: 0;
+}
+
+@media (max-width: 750px) {
+  .analytics-breakdown-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .analytics-breakdown-layout .analytics-pie-chart-area {
+    position: static;
+    padding: 16px 0;
+  }
+}
